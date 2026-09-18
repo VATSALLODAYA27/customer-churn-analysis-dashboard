@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Customer Churn Analysis Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --text:#1c2530; --muted:#6b7688;
+    --border:#e3e7ee; --accent:#2E86AB; --danger:#E94F37; --safe:#2E86AB;
+    --shadow: 0 1px 3px rgba(16,24,40,0.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#12161c; --card:#1a2029; --text:#e8ecf2; --muted:#98a2b3; --border:#2a3242; --shadow:0 1px 3px rgba(0,0,0,0.4);}
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;}
+  header{padding:24px 32px 8px;}
+  header h1{margin:0 0 4px;font-size:1.5rem;}
+  header p{margin:0;color:var(--muted);font-size:0.92rem;}
+  .container{padding:16px 32px 40px;max-width:1400px;margin:0 auto;}
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
+  .kpi .label{font-size:0.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .kpi .value{font-size:1.7rem;font-weight:700;margin-top:6px;}
+  .kpi .sub{font-size:0.78rem;color:var(--muted);margin-top:4px;}
+  .kpi.danger .value{color:var(--danger);}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  @media (max-width:900px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
+  .card h3{margin:0 0 12px;font-size:1rem;}
+  .card canvas{max-height:280px;}
+  table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:600;font-size:0.75rem;text-transform:uppercase;}
+  tr:hover td{background:rgba(46,134,171,0.06);}
+  .rate-pill{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:600;font-size:0.8rem;}
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+  select{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:0.85rem;}
+  footer{color:var(--muted);font-size:0.78rem;text-align:center;padding:20px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Customer Churn Analysis Dashboard</h1>
+  <p>10,500 customer records &middot; SQL + Python driver analysis &middot; interactive browser dashboard (Power BI-equivalent — see <code>powerbi/README.md</code> to build the native .pbix)</p>
+</header>
+<div class="container">
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="grid">
+    <div class="card"><h3>Churn Rate by Contract Type</h3><canvas id="chartContract"></canvas></div>
+    <div class="card"><h3>Churn Rate by Internet Service</h3><canvas id="chartInternet"></canvas></div>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Churn Rate by Payment Method</h3><canvas id="chartPayment"></canvas></div>
+    <div class="card"><h3>Churn Rate by Tenure Bucket (months)</h3><canvas id="chartTenure"></canvas></div>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Monthly Charges vs. Tenure</h3><canvas id="chartScatter"></canvas></div>
+    <div class="card"><h3>Overall Churn Split</h3><canvas id="chartDonut"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h3>Highest-Risk Segments (Contract &times; Internet &times; Payment)</h3>
+    <table id="segmentTable">
+      <thead><tr><th>Contract</th><th>Internet</th><th>Payment</th><th>Customers</th><th>Churn Rate</th><th>MRR at Risk</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+<footer>Generated from a synthetic 10,500-row telecom dataset (see <code>data/generate_data.py</code>) &middot; charts render client-side with Chart.js from <code>dashboard/data.js</code></footer>
+
+<script src="data.js"></script>
+<script>
+const D = DASHBOARD_DATA;
+const RED = '#E94F37', BLUE = '#2E86AB', MUTED = '#98a2b3';
+const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+const textColor = isDark ? '#e8ecf2' : '#1c2530';
+Chart.defaults.color = textColor;
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+function fmtPct(v){ return v.toFixed(1) + '%'; }
+function fmtUsd(v){ return '$' + v.toLocaleString(undefined, {maximumFractionDigits:0}); }
+
+// KPI cards
+const kpis = D.kpis;
+const kpiRow = document.getElementById('kpiRow');
+const kpiDefs = [
+  {label:'Total Customers', value: kpis.totalCustomers.toLocaleString(), sub: `${kpis.churnedCustomers.toLocaleString()} churned`},
+  {label:'Churn Rate', value: fmtPct(kpis.churnRate), sub: 'of total customer base', danger:true},
+  {label:'MRR at Risk', value: fmtUsd(kpis.mrrAtRisk), sub: `${fmtPct(kpis.pctMrrAtRisk)} of total MRR (${fmtUsd(kpis.totalMrr)})`, danger:true},
+  {label:'Avg. Tenure', value: kpis.avgTenure + ' mo', sub: `avg. monthly charge ${fmtUsd(kpis.avgMonthlyCharges)}`},
+];
+kpiRow.innerHTML = kpiDefs.map(k => `
+  <div class="kpi ${k.danger?'danger':''}">
+    <div class="label">${k.label}</div>
+    <div class="value">${k.value}</div>
+    <div class="sub">${k.sub}</div>
+  </div>`).join('');
+
+function barChart(id, rows, horizontal=true){
+  new Chart(document.getElementById(id), {
+    type: 'bar',
+    data: {
+      labels: rows.map(r=>r.label),
+      datasets: [{
+        label: 'Churn Rate (%)',
+        data: rows.map(r=>r.churnRate),
+        backgroundColor: RED,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: horizontal ? 'y' : 'x',
+      responsive: true,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: c => `${c.raw}% churn (${rows[c.dataIndex].customers.toLocaleString()} customers)` } } },
+      scales: { x: { beginAtZero:true, grid:{color:'rgba(128,128,128,0.15)'} }, y: { grid:{display:false} } }
+    }
+  });
+}
+
+barChart('chartContract', D.byContract);
+barChart('chartInternet', D.byInternet);
+barChart('chartPayment', D.byPayment);
+barChart('chartTenure', D.byTenure, false);
+
+new Chart(document.getElementById('chartDonut'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Retained', 'Churned'],
+    datasets: [{ data: [kpis.totalCustomers - kpis.churnedCustomers, kpis.churnedCustomers], backgroundColor: [BLUE, RED] }]
+  },
+  options: { plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
+});
+
+new Chart(document.getElementById('chartScatter'), {
+  type: 'scatter',
+  data: {
+    datasets: [
+      { label: 'Retained', data: D.scatterSample.filter(p=>p.churn==='No').map(p=>({x:p.tenure,y:p.monthlyCharges})), backgroundColor: 'rgba(46,134,171,0.55)' },
+      { label: 'Churned', data: D.scatterSample.filter(p=>p.churn==='Yes').map(p=>({x:p.tenure,y:p.monthlyCharges})), backgroundColor: 'rgba(233,79,55,0.6)' },
+    ]
+  },
+  options: {
+    plugins: { legend: { position: 'bottom' } },
+    scales: {
+      x: { title: { display:true, text:'Tenure (months)' }, grid:{color:'rgba(128,128,128,0.15)'} },
+      y: { title: { display:true, text:'Monthly Charges ($)' }, grid:{color:'rgba(128,128,128,0.15)'} },
+    }
+  }
+});
+
+// Segment table
+const tbody = document.querySelector('#segmentTable tbody');
+tbody.innerHTML = D.topSegments.map(s => {
+  const color = s.churnRate >= 50 ? RED : (s.churnRate >= 30 ? '#e08e0b' : BLUE);
+  return `<tr>
+    <td>${s.contract}</td><td>${s.internetService}</td><td>${s.paymentMethod}</td>
+    <td>${s.customers.toLocaleString()}</td>
+    <td><span class="rate-pill" style="background:${color}22;color:${color}">${fmtPct(s.churnRate)}</span></td>
+    <td>${fmtUsd(s.mrrAtRisk)}</td>
+  </tr>`;
+}).join('');
+</script>
+</body>
+</html>

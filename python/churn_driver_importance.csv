@@ -1,0 +1,31 @@
+feature,coefficient,abs_coefficient,direction
+Contract_Two year,-1.0545523213708818,1.0545523213708818,decreases churn
+Tenure,-0.6805544595578494,0.6805544595578494,decreases churn
+Contract_One year,-0.6518181008824143,0.6518181008824143,decreases churn
+PaymentMethod_Electronic check,0.3405508449231047,0.3405508449231047,increases churn
+InternetService_Fiber optic,0.2587489212607025,0.2587489212607025,increases churn
+MonthlyCharges,0.19416775287048288,0.19416775287048288,increases churn
+TechSupport_Yes,-0.18269680552604725,0.18269680552604725,decreases churn
+TotalCharges,0.1757004297712668,0.1757004297712668,increases churn
+OnlineSecurity_Yes,-0.16287100892324524,0.16287100892324524,decreases churn
+SeniorCitizen,0.10344592194876245,0.10344592194876245,increases churn
+PaymentMethod_Mailed check,0.099856770224205,0.099856770224205,increases churn
+PaperlessBilling,0.09258537726214047,0.09258537726214047,increases churn
+Partner,-0.081937023683645,0.081937023683645,decreases churn
+InternetService_No,-0.06715348689051645,0.06715348689051645,decreases churn
+OnlineSecurity_No internet service,-0.06715348689051645,0.06715348689051645,decreases churn
+OnlineBackup_No internet service,-0.06715348689051645,0.06715348689051645,decreases churn
+StreamingMovies_No internet service,-0.06715348689051645,0.06715348689051645,decreases churn
+StreamingTV_No internet service,-0.06715348689051645,0.06715348689051645,decreases churn
+DeviceProtection_No internet service,-0.06715348689051645,0.06715348689051645,decreases churn
+TechSupport_No internet service,-0.06715348689051645,0.06715348689051645,decreases churn
+DeviceProtection_Yes,-0.040412970503109415,0.040412970503109415,decreases churn
+PaymentMethod_Credit card (automatic),-0.03305060350370439,0.03305060350370439,decreases churn
+StreamingMovies_Yes,-0.0278330517938894,0.0278330517938894,decreases churn
+MultipleLines_Yes,0.02082384504987991,0.02082384504987991,increases churn
+Dependents,-0.009470269783535061,0.009470269783535061,decreases churn
+PhoneService,-0.00841987982535416,0.00841987982535416,decreases churn
+MultipleLines_No phone service,0.008419879825352776,0.008419879825352776,increases churn
+StreamingTV_Yes,-0.008158582133347761,0.008158582133347761,decreases churn
+Gender_Male,0.006388827435512483,0.006388827435512483,increases churn
+OnlineBackup_Yes,0.0012436402171165876,0.0012436402171165876,increases churn

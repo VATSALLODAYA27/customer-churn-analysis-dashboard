@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+sql/churn.db
+.ipynb_checkpoints/
