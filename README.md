@@ -94,3 +94,4 @@ python/          EDA + churn-driver analysis script, generated figures
 powerbi/         Power BI build guide, DAX measures, BI-ready CSV
 dashboard/       interactive HTML dashboard + its data-build script
 ```
+# Customer-churn-analysis
